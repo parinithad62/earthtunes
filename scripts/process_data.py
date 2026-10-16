@@ -72,31 +72,65 @@ def load_nifc():
     })
 
 
+
 def validate(df):
     required = [
+        "year",
         "temperature_anomaly_c",
         "arctic_sea_ice_extent_million_km2",
         "wildfire_count",
         "wildfire_acres",
     ]
 
+    # Check that all required columns exist.
+    missing_columns = [column for column in required if column not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {missing_columns}")
+
     if df.empty:
         raise ValueError("No overlapping years found.")
 
-    if df["year"].duplicated().any():
-        raise ValueError("Duplicate years found in combined data.")
-
+    # Check for missing and non-numeric values.
     if df[required].isna().any().any():
         raise ValueError("Missing values found in required fields.")
 
-    if (df["arctic_sea_ice_extent_million_km2"] < 0).any():
-        raise ValueError("Negative sea-ice extent found.")
+    for column in required:
+        if not pd.api.types.is_numeric_dtype(df[column]):
+            raise ValueError(f"Non-numeric values found in {column}")
 
-    if (df["wildfire_count"] < 0).any() or (df["wildfire_acres"] < 0).any():
-        raise ValueError("Negative wildfire values found.")
+    # Years must be unique and within the expected period.
+    if df["year"].duplicated().any():
+        raise ValueError("Duplicate years found in combined data.")
 
     if not df["year"].between(1983, 2025).all():
         raise ValueError("Year outside the expected NIFC period.")
+
+    # The dataset should contain every overlapping year.
+    expected_years = set(range(1983, 2026))
+    actual_years = set(df["year"].astype(int))
+    missing_years = sorted(expected_years - actual_years)
+
+    if missing_years:
+        raise ValueError(f"Missing years in combined data: {missing_years}")
+
+    # Measurements must be physically and logically valid.
+    if (df["arctic_sea_ice_extent_million_km2"] < 0).any():
+        raise ValueError("Negative sea-ice extent found.")
+
+    if (df["wildfire_count"] < 0).any():
+        raise ValueError("Negative wildfire counts found.")
+
+    if (df["wildfire_acres"] < 0).any():
+        raise ValueError("Negative wildfire acres found.")
+
+    if (df["wildfire_count"] % 1 != 0).any():
+        raise ValueError("Wildfire counts must be whole numbers.")
+
+    if (df["wildfire_acres"] % 1 != 0).any():
+        raise ValueError("Wildfire acres must be whole numbers.")
+
+    if not df["temperature_anomaly_c"].between(-5, 5).all():
+        raise ValueError("Temperature anomaly outside the expected sanity range.")
 
 
 def min_max_normalize(series):
