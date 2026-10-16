@@ -11,10 +11,12 @@ NASA_FILE = RAW / "nasa_gistemp_global.csv"
 NSIDC_FILE = RAW / "nsidc_arctic_september_extent.csv"
 NIFC_FILE = RAW / "nifc_wildfires_acres.html"
 
-
 def load_nasa():
     df = pd.read_csv(NASA_FILE, skiprows=1)
     df.columns = df.columns.str.strip()
+
+    if "Year" not in df.columns or "J-D" not in df.columns:
+        raise ValueError("NASA data is missing the Year or J-D column.")
 
     df = df[["Year", "J-D"]].copy()
     df.columns = ["year", "temperature_anomaly_c"]
@@ -24,7 +26,16 @@ def load_nasa():
         df["temperature_anomaly_c"], errors="coerce"
     )
 
-    return df.dropna(subset=["year"]).astype({"year": int})
+    df = df.dropna(subset=["year"])
+    df["year"] = df["year"].astype(int)
+
+    # Ignore years with no annual temperature value, such as incomplete 2026.
+    df = df.dropna(subset=["temperature_anomaly_c"])
+
+    if df["year"].duplicated().any():
+        raise ValueError("NASA data contains duplicate years.")
+
+    return df
 
 
 def load_nsidc():
@@ -46,6 +57,9 @@ def load_nsidc():
 def load_nifc():
     table = pd.read_html(NIFC_FILE, header=None)[0]
 
+    if not {0, 1, 2}.issubset(table.columns):
+        raise ValueError("NIFC data is missing required columns.")
+
     years = table[0].astype(str).str.strip()
     mask = years.str.fullmatch(r"\d{4}")
 
@@ -65,12 +79,16 @@ def load_nifc():
     df["year"] = pd.to_numeric(df["year"], errors="coerce")
     df = df.dropna()
 
-    return df.astype({
+    df = df.astype({
         "year": int,
         "wildfire_count": int,
-        "wildfire_acres": int,
+        "wildfire_acres": int
     })
 
+    if df["year"].duplicated().any():
+        raise ValueError("NIFC data contains duplicate years.")
+
+    return df
 
 
 def validate(df):
