@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "records": 43,
+  "first_year": 1983,
+  "last_year": 2025,
+  "missing_values": 0,
+  "duplicate_years": 0,
+  "normalization": "min-max scaling across overlapping years",
+  "normalized_range": [
+    0,
+    1
+  ],
+  "sources": {
+    "temperature": "NASA GISTEMP global annual mean (J-D), degrees Celsius anomaly",
+    "sea_ice": "NSIDC September Arctic extent, million square kilometres",
+    "wildfires": "NIFC annual U.S. wildfire count and acres burned"
+  },
+  "notes": [
+    "Only years present in all three sources are retained.",
+    "Original downloaded files remain in data/raw.",
+    "Normalized values depend on the overlapping years in this run.",
+    "Normalization is a scale transformation, not a measure of causation.",
+    "NIFC's 2004 figures exclude North Carolina state lands."
+  ]
+}
