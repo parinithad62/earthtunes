@@ -1,3 +1,4 @@
+
 from pathlib import Path
 import json
 
@@ -10,6 +11,7 @@ OUT = ROOT / "data" / "processed"
 NASA_FILE = RAW / "nasa_gistemp_global.csv"
 NSIDC_FILE = RAW / "nsidc_arctic_september_extent.csv"
 NIFC_FILE = RAW / "nifc_wildfires_acres.html"
+
 
 def load_nasa():
     df = pd.read_csv(NASA_FILE, skiprows=1)
@@ -29,7 +31,7 @@ def load_nasa():
     df = df.dropna(subset=["year"])
     df["year"] = df["year"].astype(int)
 
-    # Ignore years with no annual temperature value, such as incomplete 2026.
+    # Exclude incomplete years without an annual temperature value.
     df = df.dropna(subset=["temperature_anomaly_c"])
 
     if df["year"].duplicated().any():
@@ -42,16 +44,31 @@ def load_nsidc():
     df = pd.read_csv(NSIDC_FILE, skipinitialspace=True)
     df.columns = df.columns.str.strip()
 
+    required = {"year", "mo", "region", "extent"}
+    if not required.issubset(df.columns):
+        raise ValueError("NSIDC data is missing required columns.")
+
     df["year"] = pd.to_numeric(df["year"], errors="coerce")
     df["mo"] = pd.to_numeric(df["mo"], errors="coerce")
     df["extent"] = pd.to_numeric(df["extent"], errors="coerce")
 
-    df = df[(df["mo"] == 9) & (df["region"].astype(str).str.strip() == "N")]
+    df = df[
+        (df["mo"] == 9)
+        & (df["region"].astype(str).str.strip() == "N")
+    ]
 
     df = df[["year", "extent"]].copy()
     df.columns = ["year", "arctic_sea_ice_extent_million_km2"]
 
-    return df.dropna(subset=["year"]).astype({"year": int})
+    df = df.dropna(
+        subset=["year", "arctic_sea_ice_extent_million_km2"]
+    )
+    df["year"] = df["year"].astype(int)
+
+    if df["year"].duplicated().any():
+        raise ValueError("NSIDC data contains duplicate September records.")
+
+    return df
 
 
 def load_nifc():
@@ -79,11 +96,13 @@ def load_nifc():
     df["year"] = pd.to_numeric(df["year"], errors="coerce")
     df = df.dropna()
 
-    df = df.astype({
-        "year": int,
-        "wildfire_count": int,
-        "wildfire_acres": int
-    })
+    df = df.astype(
+        {
+            "year": int,
+            "wildfire_count": int,
+            "wildfire_acres": int,
+        }
+    )
 
     if df["year"].duplicated().any():
         raise ValueError("NIFC data contains duplicate years.")
@@ -100,15 +119,15 @@ def validate(df):
         "wildfire_acres",
     ]
 
-    # Check that all required columns exist.
-    missing_columns = [column for column in required if column not in df.columns]
+    missing_columns = [
+        column for column in required if column not in df.columns
+    ]
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
 
     if df.empty:
         raise ValueError("No overlapping years found.")
 
-    # Check for missing and non-numeric values.
     if df[required].isna().any().any():
         raise ValueError("Missing values found in required fields.")
 
@@ -116,14 +135,12 @@ def validate(df):
         if not pd.api.types.is_numeric_dtype(df[column]):
             raise ValueError(f"Non-numeric values found in {column}")
 
-    # Years must be unique and within the expected period.
     if df["year"].duplicated().any():
         raise ValueError("Duplicate years found in combined data.")
 
     if not df["year"].between(1983, 2025).all():
-        raise ValueError("Year outside the expected NIFC period.")
+        raise ValueError("Year outside the expected period.")
 
-    # The dataset should contain every overlapping year.
     expected_years = set(range(1983, 2026))
     actual_years = set(df["year"].astype(int))
     missing_years = sorted(expected_years - actual_years)
@@ -131,7 +148,6 @@ def validate(df):
     if missing_years:
         raise ValueError(f"Missing years in combined data: {missing_years}")
 
-    # Measurements must be physically and logically valid.
     if (df["arctic_sea_ice_extent_million_km2"] < 0).any():
         raise ValueError("Negative sea-ice extent found.")
 
@@ -172,7 +188,7 @@ def main():
     print(f"NSIDC September records: {len(nsidc)}")
     print(f"NIFC annual records: {len(nifc)}")
 
-    # Inner joins retain only years present in all three sources.
+    # Retain only years present in all three sources.
     df = nasa.merge(nsidc, on="year", how="inner")
     df = df.merge(nifc, on="year", how="inner")
     df = df.sort_values("year").reset_index(drop=True)
@@ -189,7 +205,6 @@ def main():
     for source_column, output_column in normalization_fields.items():
         df[output_column] = min_max_normalize(df[source_column])
 
-    # Check that normalized values are in the expected range.
     for column in normalization_fields.values():
         if not df[column].between(0, 1).all():
             raise ValueError(f"Normalization failed for {column}")
@@ -197,8 +212,55 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
     records = df.round(6).to_dict(orient="records")
+
+    # Preserve detailed per-year records for validation and analysis.
+    records_path = OUT / "data_records.json"
+    records_path.write_text(
+        json.dumps(records, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    # Export the agreed schema for the other project members.
+    schema_data = {
+        "years": [row["year"] for row in records],
+        "variables": {
+            "temperature": {
+                "unit": "°C",
+                "raw": [
+                    row["temperature_anomaly_c"] for row in records
+                ],
+                "norm": [
+                    row["temperature_normalized"] for row in records
+                ],
+            },
+            "sea_ice": {
+                "unit": "M km²",
+                "raw": [
+                    row["arctic_sea_ice_extent_million_km2"]
+                    for row in records
+                ],
+                "norm": [
+                    row["sea_ice_normalized"] for row in records
+                ],
+            },
+            "wildfire": {
+                "unit": "M acres",
+                "raw": [
+                    round(row["wildfire_acres"] / 1_000_000, 3)
+                    for row in records
+                ],
+                "norm": [
+                    row["wildfire_acres_normalized"] for row in records
+                ],
+            },
+        },
+    }
+
     data_path = OUT / "data.json"
-    data_path.write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
+    data_path.write_text(
+        json.dumps(schema_data, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     report = {
         "status": "passed",
@@ -209,9 +271,14 @@ def main():
         "duplicate_years": int(df["year"].duplicated().sum()),
         "normalization": "min-max scaling across overlapping years",
         "normalized_range": [0, 1],
-                "sources": {
-            "temperature": "NASA GISTEMP global annual mean (J-D), degrees Celsius anomaly",
-            "sea_ice": "NSIDC September Arctic extent, million square kilometres",
+        "sources": {
+            "temperature": (
+                "NASA GISTEMP global annual mean (J-D), "
+                "degrees Celsius anomaly relative to 1951–1980"
+            ),
+            "sea_ice": (
+                "NSIDC September Arctic extent, million square kilometres"
+            ),
             "wildfires": "NIFC annual U.S. wildfire count and acres burned",
         },
         "notes": [
@@ -219,17 +286,24 @@ def main():
             "Original downloaded files remain in data/raw.",
             "Normalized values depend on the overlapping years in this run.",
             "Normalization is a scale transformation, not a measure of causation.",
+            "NASA's incomplete 2026 annual value is excluded.",
             "NIFC's 2004 figures exclude North Carolina state lands.",
+            "Wildfire data is U.S.-only; temperature data is global; sea-ice data is Arctic.",
+            "Wildfire count reporting may be inconsistent before 1985.",
         ],
     }
 
     report_path = OUT / "validation_report.json"
-    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    report_path.write_text(
+        json.dumps(report, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     print("\nValidation passed.")
     print(f"Years: {report['first_year']}–{report['last_year']}")
     print(f"Records: {report['records']}")
     print(f"JSON: {data_path.relative_to(ROOT)}")
+    print(f"Detailed records: {records_path.relative_to(ROOT)}")
     print(f"Report: {report_path.relative_to(ROOT)}")
 
 

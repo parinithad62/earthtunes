@@ -84,3 +84,38 @@ python -m pytest -v
 The pipeline checks for missing values, duplicate years, expected year coverage, invalid numeric values, negative sea-ice or wildfire values, and out-of-range normalized values.
 
 The automated tests cover year coverage, duplicate years, required values, normalized ranges, preservation of the 2004 wildfire data, and documentation of the source limitation.
+
+
+## Processed Data Schema and Interpretation
+
+The final dataset is available at `data/processed/data.json`. It covers **1983–2025**, containing 43 annual records shared across all three sources.
+
+The JSON structure contains:
+- `years`: the ordered list of years.
+- `variables.temperature`: global annual temperature anomaly.
+- `variables.sea_ice`: September Arctic sea-ice extent.
+- `variables.wildfire`: annual U.S. wildfire acres burned.
+
+Each variable contains `unit`, `raw`, and `norm` arrays. Each array has 43 entries aligned by year.
+
+### Units and source interpretation
+
+- **Temperature:** Degrees Celsius (°C), relative to the 1951–1980 baseline, from NASA GISTEMP global annual mean data (J-D).
+- **Sea ice:** Million square kilometres (M km²), using September Arctic sea-ice extent, representing the seasonal minimum period.
+- **Wildfire:** Million acres (M acres) burned in the United States, from NIFC annual data. The global temperature and Arctic sea-ice series have different geographic coverage from the U.S. wildfire series.
+
+Wildfire `raw` values are converted from acres to millions of acres and rounded to three decimal places for export. Wildfire normalization is calculated from the original, unrounded acres-burned values before export rounding.
+
+### Normalization
+
+The `norm` arrays use min-max normalization across the overlapping 1983–2025 period. Values range from 0 to 1. For sea ice, higher normalized values indicate greater sea-ice extent; the series is not inverted.
+
+Normalization is a scale transformation and does not establish causation.
+
+### Data limitations
+
+- NASA's incomplete 2026 annual temperature value is excluded.
+- NIFC's reported 2004 wildfire figures exclude North Carolina state lands.
+- Wildfire-count reporting may be inconsistent before 1985. The final `data.json` export contains wildfire acres burned, not `wildfire_count`.
+- The original detailed yearly records are retained separately at `data/processed/data_records.json`.
+- The validation report is available at `data/processed/validation_report.json`.

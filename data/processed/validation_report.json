@@ -11,7 +11,7 @@
     1
   ],
   "sources": {
-    "temperature": "NASA GISTEMP global annual mean (J-D), degrees Celsius anomaly",
+    "temperature": "NASA GISTEMP global annual mean (J-D), degrees Celsius anomaly relative to 1951\u20131980",
     "sea_ice": "NSIDC September Arctic extent, million square kilometres",
     "wildfires": "NIFC annual U.S. wildfire count and acres burned"
   },
@@ -20,6 +20,9 @@
     "Original downloaded files remain in data/raw.",
     "Normalized values depend on the overlapping years in this run.",
     "Normalization is a scale transformation, not a measure of causation.",
-    "NIFC's 2004 figures exclude North Carolina state lands."
+    "NASA's incomplete 2026 annual value is excluded.",
+    "NIFC's 2004 figures exclude North Carolina state lands.",
+    "Wildfire data is U.S.-only; temperature data is global; sea-ice data is Arctic.",
+    "Wildfire count reporting may be inconsistent before 1985."
   ]
 }
