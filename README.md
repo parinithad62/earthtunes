@@ -27,6 +27,7 @@ The data pipeline collects, cleans, combines, validates, and normalizes data fro
 
 - `data/processed/data.json` — combined annual environmental data, including raw and normalized measurements.
 - `data/processed/validation_report.json` — validation status, record counts, year range, and source notes.
+- `data/processed/hits.json` — each variable's most dramatic moments (records, anomalies, largest changes, change points) with titles and liner notes. See `analysis/README.md`.
 
 The current processed dataset contains 43 annual records covering 1983–2025.
 
@@ -56,7 +57,13 @@ Process, validate, and export the data:
 python scripts/process_data.py
 ```
 
-Run the pipeline and automated tests:
+Find the greatest hits:
+
+```bash
+python analysis/greatest_hits.py
+```
+
+Run the pipeline, hits engine, and automated tests:
 
 ```bash
 make
@@ -74,7 +81,7 @@ python -m pytest -v
 - `data/raw/` — downloaded source datasets.
 - `data/processed/` — processed JSON and validation report.
 - `tests/` — automated pipeline tests.
-- `analysis/` — project analysis.
+- `analysis/` — "greatest hits" engine that finds dramatic events.
 - `ui/` — user interface.
 - `audio/` — audio-related project components.
 - `harmony/` — harmony-related project components.
