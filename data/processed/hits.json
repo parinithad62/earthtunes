@@ -1,0 +1,322 @@
+[
+  {
+    "id": 1,
+    "variable": "sea_ice",
+    "year": 1996,
+    "type": "record_high",
+    "zscore": 1.33,
+    "value": 7.58,
+    "window": [
+      1992,
+      2000
+    ],
+    "rank": 4,
+    "score": 2.33,
+    "title": "The Big Freeze",
+    "liner_notes": "1996: Arctic September sea ice hit an all-time record high of 7.58 M km², 1.3 σ above the 1983–2012 average."
+  },
+  {
+    "id": 2,
+    "variable": "wildfire",
+    "year": 2002,
+    "type": "shift_up",
+    "zscore": 0.9,
+    "value": 7.185,
+    "window": [
+      1998,
+      2006
+    ],
+    "rank": 3,
+    "score": 1.95,
+    "title": "Fire Regime Shift",
+    "liner_notes": "2002: U.S. wildfire area burned shifted to a new normal — its 5-year average rose from 4.16 M acres to 7.56 M acres."
+  },
+  {
+    "id": 3,
+    "variable": "wildfire",
+    "year": 2004,
+    "type": "record_high",
+    "zscore": 1.23,
+    "value": 8.098,
+    "window": [
+      2000,
+      2008
+    ],
+    "rank": 5,
+    "score": 1.73,
+    "title": "Fire Climbs Higher",
+    "liner_notes": "2004: U.S. wildfire area burned set a new record high of 8.10 M acres (1.2 σ above the 1983–2012 average), a record that stood until 2005. NIFC's 2004 figure excludes North Carolina state lands."
+  },
+  {
+    "id": 4,
+    "variable": "wildfire",
+    "year": 2005,
+    "type": "record_high",
+    "zscore": 1.44,
+    "value": 8.689,
+    "window": [
+      2001,
+      2009
+    ],
+    "rank": 4,
+    "score": 1.94,
+    "title": "Firestorm",
+    "liner_notes": "2005: U.S. wildfire area burned set a new record high of 8.69 M acres (1.4 σ above the 1983–2012 average), a record that stood until 2006."
+  },
+  {
+    "id": 5,
+    "variable": "wildfire",
+    "year": 2006,
+    "type": "record_high",
+    "zscore": 1.87,
+    "value": 9.874,
+    "window": [
+      2002,
+      2010
+    ],
+    "rank": 2,
+    "score": 2.37,
+    "title": "Record Burn",
+    "liner_notes": "2006: U.S. wildfire area burned set a new record high of 9.87 M acres (1.9 σ above the 1983–2012 average), a record that stood until 2015."
+  },
+  {
+    "id": 6,
+    "variable": "sea_ice",
+    "year": 2007,
+    "type": "record_low",
+    "zscore": -1.87,
+    "value": 4.27,
+    "window": [
+      2003,
+      2011
+    ],
+    "rank": 3,
+    "score": 2.37,
+    "title": "Record Melt",
+    "liner_notes": "2007: Arctic September sea ice set a new record low of 4.27 M km² (1.9 σ below the 1983–2012 average), a record that stood until 2012."
+  },
+  {
+    "id": 7,
+    "variable": "sea_ice",
+    "year": 2007,
+    "type": "shift_down",
+    "zscore": -1.87,
+    "value": 4.27,
+    "window": [
+      2003,
+      2011
+    ],
+    "rank": 6,
+    "score": 1.73,
+    "title": "The Ice Retreat",
+    "liner_notes": "2007: Arctic September sea ice shifted to a new normal — its 5-year average fell from 5.86 M km² to 4.73 M km²."
+  },
+  {
+    "id": 8,
+    "variable": "sea_ice",
+    "year": 2012,
+    "type": "record_low",
+    "zscore": -2.55,
+    "value": 3.57,
+    "window": [
+      2008,
+      2016
+    ],
+    "rank": 1,
+    "score": 3.55,
+    "title": "The Great Melt",
+    "liner_notes": "2012: Arctic September sea ice hit an all-time record low of 3.57 M km², 2.5 σ below the 1983–2012 average."
+  },
+  {
+    "id": 9,
+    "variable": "sea_ice",
+    "year": 2013,
+    "type": "largest_rise",
+    "zscore": -0.96,
+    "value": 5.21,
+    "window": [
+      2009,
+      2017
+    ],
+    "rank": 2,
+    "score": 2.39,
+    "title": "Ice Rebound",
+    "liner_notes": "2013: the biggest one-year rise in the record — Arctic September sea ice rose by 1.64 M km² from 2012, to 5.21 M km²."
+  },
+  {
+    "id": 10,
+    "variable": "wildfire",
+    "year": 2013,
+    "type": "largest_drop",
+    "zscore": -0.14,
+    "value": 4.32,
+    "window": [
+      2009,
+      2017
+    ],
+    "rank": 6,
+    "score": 1.52,
+    "title": "The Big Lull",
+    "liner_notes": "2013: the biggest one-year drop in the record — U.S. wildfire area burned fell by 5.01 M acres from 2012, to 4.32 M acres."
+  },
+  {
+    "id": 11,
+    "variable": "temperature",
+    "year": 2015,
+    "type": "record_high",
+    "zscore": 2.49,
+    "value": 0.89,
+    "window": [
+      2011,
+      2019
+    ],
+    "rank": 7,
+    "score": 2.99,
+    "title": "Turning Up the Heat",
+    "liner_notes": "2015: the global temperature anomaly set a new record high of +0.89 °C (2.5 σ above the 1983–2012 average), a record that stood until 2016."
+  },
+  {
+    "id": 12,
+    "variable": "temperature",
+    "year": 2015,
+    "type": "shift_up",
+    "zscore": 2.49,
+    "value": 0.89,
+    "window": [
+      2011,
+      2019
+    ],
+    "rank": 8,
+    "score": 2.22,
+    "title": "The Warming Shift",
+    "liner_notes": "2015: the global temperature anomaly shifted to a new normal — its 5-year average rose from +0.68 °C to +0.93 °C."
+  },
+  {
+    "id": 13,
+    "variable": "wildfire",
+    "year": 2015,
+    "type": "record_high",
+    "zscore": 1.96,
+    "value": 10.125,
+    "window": [
+      2011,
+      2019
+    ],
+    "rank": 1,
+    "score": 2.96,
+    "title": "Year of Fire",
+    "liner_notes": "2015: U.S. wildfire area burned hit an all-time record high of 10.12 M acres, 2.0 σ above the 1983–2012 average."
+  },
+  {
+    "id": 14,
+    "variable": "temperature",
+    "year": 2016,
+    "type": "record_high",
+    "zscore": 3.17,
+    "value": 1.01,
+    "window": [
+      2012,
+      2020
+    ],
+    "rank": 4,
+    "score": 3.67,
+    "title": "Fever Pitch",
+    "liner_notes": "2016: the global temperature anomaly set a new record high of +1.01 °C (3.2 σ above the 1983–2012 average), a record that stood until 2023."
+  },
+  {
+    "id": 15,
+    "variable": "temperature",
+    "year": 2019,
+    "type": "anomaly_high",
+    "zscore": 3.0,
+    "value": 0.98,
+    "window": [
+      2015,
+      2023
+    ],
+    "rank": 6,
+    "score": 3.0,
+    "title": "Warm Spell",
+    "liner_notes": "2019: the global temperature anomaly reached +0.98 °C, 3.0 σ above the 1983–2012 average."
+  },
+  {
+    "id": 16,
+    "variable": "temperature",
+    "year": 2020,
+    "type": "anomaly_high",
+    "zscore": 3.17,
+    "value": 1.01,
+    "window": [
+      2016,
+      2024
+    ],
+    "rank": 5,
+    "score": 3.17,
+    "title": "Heatwave Year",
+    "liner_notes": "2020: the global temperature anomaly reached +1.01 °C, 3.2 σ above the 1983–2012 average."
+  },
+  {
+    "id": 17,
+    "variable": "sea_ice",
+    "year": 2020,
+    "type": "anomaly_low",
+    "zscore": -2.13,
+    "value": 4.0,
+    "window": [
+      2016,
+      2024
+    ],
+    "rank": 5,
+    "score": 2.13,
+    "title": "Thin Ice",
+    "liner_notes": "2020: Arctic September sea ice reached 4.00 M km², 2.1 σ below the 1983–2012 average."
+  },
+  {
+    "id": 18,
+    "variable": "temperature",
+    "year": 2023,
+    "type": "record_high",
+    "zscore": 4.08,
+    "value": 1.17,
+    "window": [
+      2019,
+      2025
+    ],
+    "rank": 2,
+    "score": 4.58,
+    "title": "New Heat Record",
+    "liner_notes": "2023: the global temperature anomaly set a new record high of +1.17 °C (4.1 σ above the 1983–2012 average), a record that stood until 2024."
+  },
+  {
+    "id": 19,
+    "variable": "temperature",
+    "year": 2024,
+    "type": "record_high",
+    "zscore": 4.7,
+    "value": 1.28,
+    "window": [
+      2020,
+      2025
+    ],
+    "rank": 1,
+    "score": 5.7,
+    "title": "Hottest Year on Record",
+    "liner_notes": "2024: the global temperature anomaly hit an all-time record high of +1.28 °C, 4.7 σ above the 1983–2012 average."
+  },
+  {
+    "id": 20,
+    "variable": "temperature",
+    "year": 2025,
+    "type": "anomaly_high",
+    "zscore": 4.13,
+    "value": 1.18,
+    "window": [
+      2021,
+      2025
+    ],
+    "rank": 3,
+    "score": 4.13,
+    "title": "Running Hot",
+    "liner_notes": "2025: the global temperature anomaly reached +1.18 °C, 4.1 σ above the 1983–2012 average."
+  }
+]

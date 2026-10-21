@@ -3,6 +3,7 @@
 - `data.json`: the agreed handoff file. Keys: `years`, `variables.{temperature, sea_ice, wildfire}`, each with `unit`, `raw`, `norm`. 43 entries each, 1983-2025.
 - `data_records.json`: the same data as per-year records, plus `wildfire_count` (unreliable before 1985).
 - `validation_report.json`: validation results and source notes.
+- `hits.json`: the "greatest hits" (5-8 dramatic events per variable) from `analysis/greatest_hits.py`. Schema in `analysis/README.md`.
 
 | Variable | Source | Unit | Notes |
 |---|---|---|---|
