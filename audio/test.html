@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EarthTunes audio test</title>
+  <script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+  <style>
+    :root { color-scheme: light dark; --bg: #0f1115; --panel: #181b22; --text: #e8eaf0; --muted: #8a90a0; --accent: #6cc4ff; --line: #2a2f3a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    p.sub { color: var(--muted); margin: 0 0 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
+    button { font: inherit; background: #232835; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    #hits { list-style: none; padding: 0; margin: 0; max-height: 420px; overflow: auto; }
+    #hits li { padding: 8px 10px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+    #hits li:hover { border-color: var(--line); }
+    #hits li.active { border-color: var(--accent); background: #1d2430; }
+    #hits small { color: var(--muted); display: block; }
+    .year { font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bar { height: 6px; background: #232835; border-radius: 3px; overflow: hidden; margin: 6px 0 14px; }
+    .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+    td:last-child { text-align: right; color: var(--muted); }
+    label { display: flex; align-items: center; gap: 8px; }
+    input[type=range] { flex: 1; }
+    .layer { display: grid; grid-template-columns: 130px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    #log { font: 12px ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; max-height: 120px; overflow: auto; margin: 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>EarthTunes audio engine test</h1>
+  <p class="sub">Person 3 handoff. Click a hit to hear its window. Run from a local server (see audio/README.md).</p>
+
+  <div class="grid">
+    <section>
+      <h2>Greatest hits</h2>
+      <div class="row">
+        <button id="playAll">Play full 1983–2025</button>
+        <button id="toggle">Pause</button>
+        <button id="stop">Stop</button>
+      </div>
+      <ul id="hits"></ul>
+    </section>
+
+    <section>
+      <h2>Now playing</h2>
+      <div id="title">Nothing yet</div>
+      <div class="year" id="year">----</div>
+      <div class="bar"><div id="progress"></div></div>
+      <table>
+        <tr><td>Temperature</td><td id="v-temperature">–</td></tr>
+        <tr><td>Sea ice</td><td id="v-sea_ice">–</td></tr>
+        <tr><td>Wildfire</td><td id="v-wildfire">–</td></tr>
+      </table>
+
+      <h2 style="margin-top:18px">Mixer</h2>
+      <div class="layer"><span>Master</span><input type="range" min="0" max="1" step="0.01" value="0.8" id="vol-master"></div>
+      <div id="layers"></div>
+      <div class="layer"><span>Speed <b id="speedVal">1×</b></span><input type="range" min="0.25" max="3" step="0.25" value="1" id="speed"></div>
+
+      <h2 style="margin-top:18px">State</h2>
+      <pre id="log"></pre>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+  import { createEngine, LAYERS } from './audio.js';
+
+  const $ = (id) => document.getElementById(id);
+  const log = (msg) => { $('log').textContent = `${msg}\n${$('log').textContent}`.slice(0, 2000); };
+  const engine = createEngine();
+  window.engine = engine; // handy for poking at it in the console
+
+  const [hits] = await Promise.all([
+    fetch('../data/processed/hits.json').then((r) => r.json()),
+    engine.load('../data/processed/data.json'),
+  ]);
+  const units = Object.fromEntries(LAYERS.map((n) => [n, engine.data.variables[n].unit]));
+  log(`loaded ${engine.years.length} years, ${hits.length} hits`);
+
+  // hit list
+  const list = $('hits');
+  hits.forEach((hit) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<b>${hit.year} · ${hit.title}</b><small>${hit.variable} · ${hit.type} · window ${hit.window[0]}–${hit.window[1]}</small>`;
+    li.onclick = () => {
+      document.querySelectorAll('#hits li').forEach((x) => x.classList.remove('active'));
+      li.classList.add('active');
+      $('title').textContent = `${hit.title}: ${hit.liner_notes}`;
+      engine.play(hit);
+    };
+    list.appendChild(li);
+  });
+
+  $('playAll').onclick = () => { $('title').textContent = 'Full record'; engine.playAll(); };
+  $('toggle').onclick = () => engine.toggle();
+  $('stop').onclick = () => engine.stop();
+
+  // mixer
+  $('vol-master').oninput = (e) => engine.setVolume(+e.target.value);
+  for (const { name, on, volume } of engine.getLayers()) {
+    const row = document.createElement('div');
+    row.className = 'layer';
+    row.innerHTML = `<label><input type="checkbox" ${on ? 'checked' : ''}> ${name}</label><input type="range" min="0" max="1" step="0.01" value="${volume}">`;
+    row.querySelector('input[type=checkbox]').onchange = (e) => engine.setLayer(name, e.target.checked);
+    row.querySelector('input[type=range]').oninput = (e) => engine.setVolume(+e.target.value, name);
+    $('layers').appendChild(row);
+  }
+  $('speed').oninput = (e) => { engine.setSpeed(+e.target.value); $('speedVal').textContent = `${e.target.value}×`; };
+
+  // engine events
+  engine.onYear((p) => {
+    $('year').textContent = p.year;
+    $('progress').style.width = `${p.progress * 100}%`;
+    $('v-temperature').textContent = `${p.values.temperature.raw} ${units.temperature} → ${p.values.temperature.note}`;
+    $('v-sea_ice').textContent = `${p.values.sea_ice.raw} ${units.sea_ice} → ${p.values.sea_ice.note}`;
+    $('v-wildfire').textContent = `${p.values.wildfire.raw} ${units.wildfire} → ${p.values.wildfire.hits} hits`;
+  });
+  engine.onStateChange((s) => { $('toggle').textContent = s === 'paused' ? 'Resume' : 'Pause'; log(`state: ${s}`); });
+  engine.onEnd(({ window: w }) => log(`finished ${w[0]}–${w[1]}`));
+</script>
+</body>
+</html>
