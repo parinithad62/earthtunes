@@ -21,7 +21,9 @@
  *   const engine = createEngine({ Tone });
  */
 
-export const LAYERS = ['temperature', 'sea_ice', 'wildfire'];
+import { createHarmonyVoice, computeTension, getIntervals } from '../harmony/harmony.js';
+
+export const LAYERS = ['temperature', 'sea_ice', 'wildfire', 'harmony'];
 
 const BASE_BPM = 90;             // beats (= years) per minute at speed 1
 const PENTATONIC = [0, 2, 4, 7, 9];
@@ -70,8 +72,9 @@ export class EarthTunesEngine {
     this._stateCbs = new Set();
     this._hooks = new Set();
     this._graph = null;
-    this._layerOn = { temperature: true, sea_ice: true, wildfire: true };
-    this._layerVol = { temperature: 0.8, sea_ice: 0.7, wildfire: 0.6 };
+    this._harmonyVoice = null;
+    this._layerOn = { temperature: true, sea_ice: true, wildfire: true, harmony: true };
+    this._layerVol = { temperature: 0.8, sea_ice: 0.7, wildfire: 0.6, harmony: 0.7 };
     this._masterVol = 0.8;
   }
 
@@ -88,7 +91,8 @@ export class EarthTunesEngine {
     if (!data || !Array.isArray(data.years) || !data.variables) {
       throw new Error('EarthTunes: data.json must have "years" and "variables".');
     }
-    for (const name of LAYERS) {
+    const DATA_VARIABLES = ['temperature', 'sea_ice', 'wildfire'];
+    for (const name of DATA_VARIABLES) {
       const v = data.variables[name];
       if (!v || v.norm.length !== data.years.length || v.raw.length !== data.years.length) {
         throw new Error(`EarthTunes: variable "${name}" is missing or not aligned with years.`);
@@ -96,12 +100,17 @@ export class EarthTunesEngine {
     }
     this.data = data;
     this.years = data.years.slice();
+    const rawA = data.years.map((_, idx) => data.variables.temperature.norm[idx] * (1.0 - data.variables.sea_ice.norm[idx]));
+    const minA = Math.min(...rawA);
+    const maxA = Math.max(...rawA);
+
     this.track = this.years.map((year, i) => {
       const t = data.variables.temperature;
       const s = data.variables.sea_ice;
       const w = data.variables.wildfire;
       return {
         year,
+        tension: computeTension(t.norm[i], s.norm[i], minA, maxA),
         temperature: { raw: t.raw[i], norm: t.norm[i], midi: quantize(t.norm[i], TEMP_SCALE) },
         sea_ice: { raw: s.raw[i], norm: s.norm[i], midi: quantize(s.norm[i], ICE_SCALE) },
         wildfire: { raw: w.raw[i], norm: w.norm[i], hits: 1 + Math.round(clamp01(w.norm[i]) * (FIRE_MAX_HITS - 1)) },
@@ -129,6 +138,7 @@ export class EarthTunesEngine {
       temperature: channel('temperature'),
       sea_ice: channel('sea_ice'),
       wildfire: channel('wildfire'),
+      harmony: channel('harmony'),
     };
 
     // Temperature: plucky triangle synth with a bit of echo
@@ -159,11 +169,26 @@ export class EarthTunesEngine {
     }).connect(channels.wildfire);
     fireKick.volume.value = -10;
 
+    // Harmony (Person 4): tension-driven voice & effects
+    this._harmonyVoice = createHarmonyVoice(T, channels.harmony);
+
     this._graph = {
       masterVol, reverb, masterBus, channels,
-      instruments: { temperature, sea_ice: seaIce, wildfire: fireNoise, wildfireKick: fireKick },
-      filters: { sea_ice: iceFilter, wildfire: fireFilter },
-      inserts: { temperature: tempDelay, sea_ice: iceFilter, wildfire: fireFilter },
+      instruments: {
+        temperature,
+        sea_ice: seaIce,
+        wildfire: fireNoise,
+        wildfireKick: fireKick,
+        harmony: this._harmonyVoice.synth,
+      },
+      filters: { sea_ice: iceFilter, wildfire: fireFilter, harmony: this._harmonyVoice.filter },
+      inserts: {
+        temperature: tempDelay,
+        sea_ice: iceFilter,
+        wildfire: fireFilter,
+        harmony: this._harmonyVoice.filter,
+      },
+      harmonyVoice: this._harmonyVoice,
     };
   }
 
@@ -200,6 +225,9 @@ export class EarthTunesEngine {
     this._start = this.years.indexOf(a);
     this._end = this.years.indexOf(b);
     this._cursor = this._start;
+    if (this._harmonyVoice && this.track[this._start]) {
+      this._harmonyVoice.resetSmoothing(this.track[this._start].tension);
+    }
     this.setSpeed(speed);
 
     const transport = this._transport;
@@ -324,6 +352,12 @@ export class EarthTunesEngine {
   /** Precomputed notes and values for one year. */
   getYear(year) { return this.track[this.years.indexOf(year)] || null; }
 
+  /** Audition harmony voice at a specific tension value (0..1) for manual testing. */
+  auditionHarmony(tensionVal, duration = 1.5) {
+    this._requireLoaded();
+    return this._harmonyVoice ? this._harmonyVoice.audition(tensionVal, duration) : null;
+  }
+
   // ---------- Internals ----------
 
   _tick(time) {
@@ -357,9 +391,16 @@ export class EarthTunesEngine {
     }
     g.instruments.wildfireKick.triggerAttackRelease('C1', '8n', time, 0.3 + 0.7 * fire.norm);
 
+    // Harmony (Person 4): play root + tension-driven intervals
+    let harmonyInfo = null;
+    if (this._harmonyVoice) {
+      harmonyInfo = this._harmonyVoice.tick(row.tension, beat, time);
+    }
+
     const steps = this._end - this._start + 1;
     const payload = {
       year: row.year,
+      tension: row.tension,
       index: i,
       step: i - this._start + 1,
       steps,
@@ -370,6 +411,7 @@ export class EarthTunesEngine {
         temperature: { ...row.temperature, note: T.Frequency(row.temperature.midi, 'midi').toNote() },
         sea_ice: { ...row.sea_ice, note: T.Frequency(row.sea_ice.midi, 'midi').toNote() },
         wildfire: { ...row.wildfire },
+        harmony: harmonyInfo ? { ...harmonyInfo } : null,
       },
     };
     for (const hook of this._hooks) {
@@ -404,6 +446,7 @@ export class EarthTunesEngine {
     if (!this._graph) return;
     this._graph.instruments.temperature.releaseAll();
     this._graph.instruments.sea_ice.releaseAll();
+    if (this._harmonyVoice) this._harmonyVoice.releaseAll();
   }
 
   _setState(state) {

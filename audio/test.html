@@ -61,12 +61,21 @@
         <tr><td>Temperature</td><td id="v-temperature">–</td></tr>
         <tr><td>Sea ice</td><td id="v-sea_ice">–</td></tr>
         <tr><td>Wildfire</td><td id="v-wildfire">–</td></tr>
+        <tr><td>Tension</td><td id="v-tension">–</td></tr>
+        <tr><td>Harmony</td><td id="v-harmony">–</td></tr>
       </table>
 
       <h2 style="margin-top:18px">Mixer</h2>
       <div class="layer"><span>Master</span><input type="range" min="0" max="1" step="0.01" value="0.8" id="vol-master"></div>
       <div id="layers"></div>
       <div class="layer"><span>Speed <b id="speedVal">1×</b></span><input type="range" min="0.25" max="3" step="0.25" value="1" id="speed"></div>
+      <div class="layer" style="margin-top:12px">
+        <span>Tension <b id="tensionVal">0.00</b></span>
+        <input type="range" min="0" max="1" step="0.01" value="0" id="manualTension">
+      </div>
+      <div style="margin-top: 6px;">
+        <button id="testHarmony" style="font-size: 12px; padding: 4px 10px;">Audition tension chord</button>
+      </div>
 
       <h2 style="margin-top:18px">State</h2>
       <pre id="log"></pre>
@@ -86,7 +95,9 @@
     fetch('../data/processed/hits.json').then((r) => r.json()),
     engine.load('../data/processed/data.json'),
   ]);
-  const units = Object.fromEntries(LAYERS.map((n) => [n, engine.data.variables[n].unit]));
+  const units = Object.fromEntries(
+    LAYERS.map((n) => [n, engine.data.variables[n] ? engine.data.variables[n].unit : ''])
+  );
   log(`loaded ${engine.years.length} years, ${hits.length} hits`);
 
   // hit list
@@ -119,6 +130,28 @@
   }
   $('speed').oninput = (e) => { engine.setSpeed(+e.target.value); $('speedVal').textContent = `${e.target.value}×`; };
 
+  // manual tension auditioning
+  $('manualTension').oninput = (e) => {
+    const val = +e.target.value;
+    $('tensionVal').textContent = val.toFixed(2);
+    $('v-tension').textContent = `${(val * 100).toFixed(1)}% (manual)`;
+    if (engine.state !== 'playing') {
+      const res = engine.auditionHarmony(val, 1.2);
+      if (res) {
+        $('v-harmony').textContent = `${res.notes.join(' ')} (detune +${(res.tension * 50).toFixed(0)}¢)`;
+      }
+    }
+  };
+
+  $('testHarmony').onclick = () => {
+    const val = +$('manualTension').value;
+    const res = engine.auditionHarmony(val, 1.5);
+    if (res) {
+      log(`audition tension=${val.toFixed(2)}: ${res.notes.join(' ')}`);
+      $('v-harmony').textContent = `${res.notes.join(' ')} (detune +${(res.tension * 50).toFixed(0)}¢)`;
+    }
+  };
+
   // engine events
   engine.onYear((p) => {
     $('year').textContent = p.year;
@@ -126,6 +159,12 @@
     $('v-temperature').textContent = `${p.values.temperature.raw} ${units.temperature} → ${p.values.temperature.note}`;
     $('v-sea_ice').textContent = `${p.values.sea_ice.raw} ${units.sea_ice} → ${p.values.sea_ice.note}`;
     $('v-wildfire').textContent = `${p.values.wildfire.raw} ${units.wildfire} → ${p.values.wildfire.hits} hits`;
+    $('v-tension').textContent = `${(p.tension * 100).toFixed(1)}% (score: ${p.tension.toFixed(3)})`;
+    if (p.values.harmony) {
+      $('v-harmony').textContent = `${p.values.harmony.notes.join(' ')} (detune +${(p.values.harmony.smoothedTension * 50).toFixed(0)}¢)`;
+    }
+    $('manualTension').value = p.tension;
+    $('tensionVal').textContent = p.tension.toFixed(2);
   });
   engine.onStateChange((s) => { $('toggle').textContent = s === 'paused' ? 'Resume' : 'Pause'; log(`state: ${s}`); });
   engine.onEnd(({ window: w }) => log(`finished ${w[0]}–${w[1]}`));
