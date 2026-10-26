@@ -91,8 +91,14 @@
   const engine = createEngine();
   window.engine = engine; // handy for poking at it in the console
 
+  const loadJson = async (url) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Could not load ${url} (${response.status})`);
+    return response.json();
+  };
+
   const [hits] = await Promise.all([
-    fetch('../data/processed/hits.json').then((r) => r.json()),
+    loadJson('../data/processed/hits.json'),
     engine.load('../data/processed/data.json'),
   ]);
   const units = Object.fromEntries(
@@ -105,17 +111,22 @@
   hits.forEach((hit) => {
     const li = document.createElement('li');
     li.innerHTML = `<b>${hit.year} · ${hit.title}</b><small>${hit.variable} · ${hit.type} · window ${hit.window[0]}–${hit.window[1]}</small>`;
-    li.onclick = () => {
+    li.onclick = async () => {
       document.querySelectorAll('#hits li').forEach((x) => x.classList.remove('active'));
       li.classList.add('active');
       $('title').textContent = `${hit.title}: ${hit.liner_notes}`;
-      engine.play(hit);
+      try { await engine.play(hit); } catch (error) { log(`error: ${error.message}`); }
     };
     list.appendChild(li);
   });
 
-  $('playAll').onclick = () => { $('title').textContent = 'Full record'; engine.playAll(); };
-  $('toggle').onclick = () => engine.toggle();
+  $('playAll').onclick = async () => {
+    $('title').textContent = 'Full record';
+    try { await engine.playAll(); } catch (error) { log(`error: ${error.message}`); }
+  };
+  $('toggle').onclick = async () => {
+    try { await engine.toggle(); } catch (error) { log(`error: ${error.message}`); }
+  };
   $('stop').onclick = () => engine.stop();
 
   // mixer
@@ -131,21 +142,21 @@
   $('speed').oninput = (e) => { engine.setSpeed(+e.target.value); $('speedVal').textContent = `${e.target.value}×`; };
 
   // manual tension auditioning
-  $('manualTension').oninput = (e) => {
+  $('manualTension').oninput = async (e) => {
     const val = +e.target.value;
     $('tensionVal').textContent = val.toFixed(2);
     $('v-tension').textContent = `${(val * 100).toFixed(1)}% (manual)`;
     if (engine.state !== 'playing') {
-      const res = engine.auditionHarmony(val, 1.2);
+      const res = await engine.auditionHarmony(val, 1.2);
       if (res) {
         $('v-harmony').textContent = `${res.notes.join(' ')} (detune +${(res.tension * 50).toFixed(0)}¢)`;
       }
     }
   };
 
-  $('testHarmony').onclick = () => {
+  $('testHarmony').onclick = async () => {
     const val = +$('manualTension').value;
-    const res = engine.auditionHarmony(val, 1.5);
+    const res = await engine.auditionHarmony(val, 1.5);
     if (res) {
       log(`audition tension=${val.toFixed(2)}: ${res.notes.join(' ')}`);
       $('v-harmony').textContent = `${res.notes.join(' ')} (detune +${(res.tension * 50).toFixed(0)}¢)`;

@@ -87,16 +87,27 @@ export class EarthTunesEngine {
 
   /** Load data.json from a URL, or pass the parsed object directly. */
   async load(source = '../data/processed/data.json') {
-    const data = typeof source === 'string' ? await (await fetch(source)).json() : source;
+    let data = source;
+    if (typeof source === 'string') {
+      const response = await fetch(source);
+      if (!response.ok) {
+        throw new Error(`EarthTunes: failed to load data from "${source}" (${response.status} ${response.statusText}).`);
+      }
+      data = await response.json();
+    }
     if (!data || !Array.isArray(data.years) || !data.variables) {
       throw new Error('EarthTunes: data.json must have "years" and "variables".');
     }
     const DATA_VARIABLES = ['temperature', 'sea_ice', 'wildfire'];
     for (const name of DATA_VARIABLES) {
       const v = data.variables[name];
-      if (!v || v.norm.length !== data.years.length || v.raw.length !== data.years.length) {
+      if (!v || !Array.isArray(v.norm) || !Array.isArray(v.raw)
+          || v.norm.length !== data.years.length || v.raw.length !== data.years.length) {
         throw new Error(`EarthTunes: variable "${name}" is missing or not aligned with years.`);
       }
+    }
+    if (data.years.length === 0 || new Set(data.years).size !== data.years.length) {
+      throw new Error('EarthTunes: years must be a non-empty array with no duplicates.');
     }
     this.data = data;
     this.years = data.years.slice();
@@ -219,6 +230,10 @@ export class EarthTunesEngine {
     let b = Math.max(startYear, endYear);
     a = Math.max(first, Math.min(last, a));
     b = Math.max(first, Math.min(last, b));
+
+    if (!this.years.includes(a) || !this.years.includes(b)) {
+      throw new Error(`EarthTunes: playback years must exist in the dataset (${first}–${last}).`);
+    }
 
     this._clearSchedule();
     this.currentHit = hit;
@@ -353,9 +368,46 @@ export class EarthTunesEngine {
   getYear(year) { return this.track[this.years.indexOf(year)] || null; }
 
   /** Audition harmony voice at a specific tension value (0..1) for manual testing. */
-  auditionHarmony(tensionVal, duration = 1.5) {
+  async auditionHarmony(tensionVal, duration = 1.5) {
     this._requireLoaded();
+    await this.Tone.start();
     return this._harmonyVoice ? this._harmonyVoice.audition(tensionVal, duration) : null;
+  }
+
+  /** Stop playback and release all Tone nodes. Call when permanently removing the engine. */
+  dispose() {
+    this._clearSchedule();
+    this._releaseAll();
+    if (this._harmonyVoice) this._harmonyVoice.dispose();
+    if (this._graph) {
+      const nodes = new Set([
+        ...Object.values(this._graph.instruments),
+        ...Object.values(this._graph.channels),
+        ...Object.values(this._graph.filters),
+        ...Object.values(this._graph.inserts),
+        this._graph.masterVol,
+        this._graph.reverb,
+        this._graph.masterBus,
+      ]);
+      // Harmony nodes were already disposed by HarmonyVoice.
+      nodes.delete(this._graph.instruments.harmony);
+      nodes.delete(this._graph.filters.harmony);
+      for (const node of nodes) {
+        if (node && typeof node.dispose === 'function') node.dispose();
+      }
+    }
+    this._graph = null;
+    this._harmonyVoice = null;
+    this.data = null;
+    this.years = [];
+    this.track = [];
+    this.currentYear = null;
+    this.currentHit = null;
+    this._yearCbs.clear();
+    this._endCbs.clear();
+    this._stateCbs.clear();
+    this._hooks.clear();
+    this.state = 'idle';
   }
 
   // ---------- Internals ----------

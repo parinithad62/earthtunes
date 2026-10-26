@@ -35,12 +35,13 @@ The current processed dataset contains 43 annual records covering 1983–2025.
 
 ## Setup
 
-Use Python 3 and create a virtual environment:
+Use Python 3 and Node.js 18+ and create a virtual environment:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+npm --prefix ui install
 ```
 
 ## Run the Pipeline
@@ -63,7 +64,7 @@ Find the greatest hits:
 python analysis/greatest_hits.py
 ```
 
-Run the pipeline, hits engine, and automated tests:
+Run the pipeline, hits engine, tension export, and all automated tests:
 
 ```bash
 make
@@ -73,7 +74,20 @@ Run the tests separately:
 
 ```bash
 python -m pytest -v
+node --test tests/test_audio.mjs
+npm --prefix ui test
 ```
+
+## Run the Frontend
+
+Start the React and Vite development server:
+
+```bash
+npm --prefix ui run dev
+```
+
+Vite prints the local URL when the server is ready. The production frontend
+build is generated with `npm --prefix ui run build` or as part of `make`.
 
 ## Repository Structure
 

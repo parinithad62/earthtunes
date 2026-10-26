@@ -41,7 +41,7 @@ await engine.load('../data/processed/data.json');   // or pass the parsed object
 engine.play(hit);              // plays hit.window (clamped to 1983–2025)
 engine.playWindow(2005, 2015, speed);
 engine.playAll(speed);
-engine.pause(); engine.resume(); engine.toggle(); engine.stop();
+engine.pause(); await engine.resume(); await engine.toggle(); engine.stop();
 engine.setSpeed(2);            // 2 = twice as fast, works mid-playback
 
 engine.setVolume(0.5);                 // master, 0–1
@@ -53,6 +53,8 @@ engine.onYear(cb);          // returns an unsubscribe function
 engine.onEnd(cb);           // ({ hit, window })
 engine.onStateChange(cb);   // 'ready' | 'playing' | 'paused' | 'ended'
 engine.currentYear;         // last year emitted
+await engine.auditionHarmony(0.75); // unlocks audio and previews a tension chord
+engine.dispose();           // permanent cleanup (for example on app teardown)
 ```
 
 **Browser rule:** the first `play*()` call must come from a click or key press, or the browser keeps audio muted.

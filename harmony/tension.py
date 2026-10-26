@@ -10,10 +10,15 @@ Outputs:
 """
 
 import json
+import os
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent.parent
+MPL_CACHE = ROOT / ".cache" / "matplotlib"
+MPL_CACHE.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
+os.environ.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
+
 DATA_PATH = ROOT / "data" / "processed" / "data.json"
 HITS_PATH = ROOT / "data" / "processed" / "hits.json"
 OUT_JSON = ROOT / "harmony" / "tension.json"
@@ -68,6 +73,10 @@ def print_table(result, hits):
 
 
 def generate_plot(result, hits, out_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     years = result["years"]
     tension = result["tension"]
     alt_with_fire = result["alt_with_fire"]

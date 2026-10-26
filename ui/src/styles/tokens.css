@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+:root {
+  color-scheme: dark;
+  --space-950: #06111c;
+  --space-900: #081725;
+  --space-850: #0b1c2b;
+  --space-800: #0d2436;
+  --space-700: #12344b;
+  --ice-50: #e8f7ff;
+  --ice-200: #b9d6e4;
+  --ice-400: #7ca9bd;
+  --cyan: #38bdf8;
+  --teal: #22d3a6;
+  --amber: #ffb454;
+  --coral: #ff6b5f;
+  --line: rgba(146, 197, 219, 0.16);
+  --line-strong: rgba(146, 197, 219, 0.28);
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  --font-data: 'IBM Plex Mono', monospace;
+  --page-gutter: clamp(1.25rem, 4vw, 4.5rem);
+  --content-width: 1440px;
+}
